@@ -210,7 +210,7 @@ where
     ) -> Result<(), SPI::Error> {
         assert!(buffer.len() == buffer_len(WIDTH as usize, HEIGHT as usize));
         self.set_ram_area(spi, 0, 0, WIDTH - 1, HEIGHT - 1)?;
-        self.set_ram_address_counters(spi, 0, 0)?;
+        self.set_ram_address_counters(spi, 8, 249)?;
 
         self.cmd_with_data(spi, Command::WriteRam, buffer)?;
 
@@ -265,19 +265,6 @@ where
     /// Never use directly this function when using partial refresh, or also
     /// keep the base buffer in syncd using `set_partial_base_buffer` function.
     fn display_frame(&mut self, spi: &mut SPI, _delay: &mut DELAY) -> Result<(), SPI::Error> {
-        if self.refresh == RefreshLut::Full {
-            self.set_display_update_control_2(
-                spi,
-                DisplayUpdateControl2::new()
-                    .enable_clock()
-                    .enable_analog()
-                    .display()
-                    .disable_analog()
-                    .disable_clock(),
-            )?;
-        } else {
-            self.set_display_update_control_2(spi, DisplayUpdateControl2::new().display())?;
-        }
         self.command(spi, Command::MasterActivation)?;
         self.wait_until_idle();
 
@@ -349,8 +336,8 @@ where
         refresh_rate: Option<RefreshLut>,
     ) -> Result<(), SPI::Error> {
         let buffer = match refresh_rate {
-            Some(RefreshLut::Full) | None => &LUT_FULL_UPDATE,
-            Some(RefreshLut::Quick) => &LUT_PARTIAL_UPDATE,
+            Some(RefreshLut::Full) | None => &LUT_FULL_UPDATE[..],
+            Some(RefreshLut::Quick) => &LUT_PARTIAL_UPDATE[..],
         };
 
         self.cmd_with_data(spi, Command::WriteLutRegister, buffer)
