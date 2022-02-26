@@ -118,7 +118,7 @@ where
             self.set_data_entry_mode(spi, DataEntryModeIncr::XIncrYIncr, DataEntryModeDir::XDir)?;
 
             // Use simple X/Y auto increase
-            self.set_ram_area(spi, 0, 0, WIDTH - 1, HEIGHT - 1)?;
+            self.set_ram_area(spi, 0, 0, 128 /* WIDTH */ - 1, HEIGHT - 1)?;
             self.set_ram_address_counters(spi, 0, 0)?;
 
             self.set_border_waveform(
@@ -209,14 +209,15 @@ where
         _delay: &mut DELAY,
     ) -> Result<(), SPI::Error> {
         assert!(buffer.len() == buffer_len(WIDTH as usize, HEIGHT as usize));
-        self.set_ram_area(spi, 0, 0, WIDTH - 1, HEIGHT - 1)?;
-        self.set_ram_address_counters(spi, 8, 249)?;
+        self.set_ram_area(spi, 0, 0, 128 /* WIDTH */ - 1, HEIGHT - 1)?;
+        // self.set_ram_address_counters(spi, 8, 249)?;
+        self.set_ram_address_counters(spi, 0, 0)?;
 
         self.cmd_with_data(spi, Command::WriteRam, buffer)?;
 
         if self.refresh == RefreshLut::Full {
             // Always keep the base buffer equal to current if not doing partial refresh.
-            self.set_ram_area(spi, 0, 0, WIDTH - 1, HEIGHT - 1)?;
+            self.set_ram_area(spi, 0, 0, 128 /* WIDTH */ - 1, HEIGHT - 1)?;
             self.set_ram_address_counters(spi, 0, 0)?;
 
             self.cmd_with_data(spi, Command::WriteRamRed, buffer)?;
@@ -289,7 +290,7 @@ where
     fn clear_frame(&mut self, spi: &mut SPI, _delay: &mut DELAY) -> Result<(), SPI::Error> {
         let color = self.background_color.get_byte_value();
 
-        self.set_ram_area(spi, 0, 0, WIDTH - 1, HEIGHT - 1)?;
+        self.set_ram_area(spi, 0, 0, 128 /* WIDTH */ - 1, HEIGHT - 1)?;
         self.set_ram_address_counters(spi, 0, 0)?;
 
         self.command(spi, Command::WriteRam)?;
@@ -301,7 +302,7 @@ where
 
         // Always keep the base buffer equals to current if not doing partial refresh.
         if self.refresh == RefreshLut::Full {
-            self.set_ram_area(spi, 0, 0, WIDTH - 1, HEIGHT - 1)?;
+            self.set_ram_area(spi, 0, 0, 128 /* WIDTH */ - 1, HEIGHT - 1)?;
             self.set_ram_address_counters(spi, 0, 0)?;
 
             self.command(spi, Command::WriteRamRed)?;
@@ -500,7 +501,7 @@ where
         self.cmd_with_data(
             spi,
             Command::SetRamXAddressStartEndPosition,
-            &[(start_x >> 3) as u8, (end_x >> 3) as u8],
+            &[((start_x >> 3) + 1) as u8, ((end_x >> 3) + 1) as u8],
         )?;
 
         self.cmd_with_data(
@@ -523,7 +524,7 @@ where
         y: u32,
     ) -> Result<(), SPI::Error> {
         self.wait_until_idle();
-        self.cmd_with_data(spi, Command::SetRamXAddressCounter, &[(x >> 3) as u8])?;
+        self.cmd_with_data(spi, Command::SetRamXAddressCounter, &[((x >> 3) + 1) as u8])?;
 
         self.cmd_with_data(
             spi,
